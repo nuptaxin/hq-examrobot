@@ -1,19 +1,26 @@
 package ren.ashin.hq.examrobot;
 
-import java.io.IOException;
+import static org.quartz.CronScheduleBuilder.cronSchedule;
+import static org.quartz.JobBuilder.newJob;
+import static org.quartz.TriggerBuilder.newTrigger;
 
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.ParseException;
-import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.CookieStore;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.util.EntityUtils;
+import org.aeonbits.owner.ConfigFactory;
+import org.apache.log4j.Logger;
+import org.apache.log4j.PropertyConfigurator;
+import org.quartz.CronTrigger;
+import org.quartz.JobDetail;
+import org.quartz.JobKey;
+import org.quartz.Scheduler;
+import org.quartz.SchedulerException;
+import org.quartz.SchedulerFactory;
+import org.quartz.impl.StdSchedulerFactory;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
 
-import ren.ashin.hq.examrobot.util.CookieUtil;
+import ren.ashin.hq.examrobot.cache.QuestionCache;
+import ren.ashin.hq.examrobot.job.ScanTaskJob;
+import ren.ashin.hq.examrobot.service.TaskQueueConsumer;
+import ren.ashin.hq.examrobot.util.MainConfig;
 
 /**
  * @ClassName: ExamRobot
@@ -22,47 +29,53 @@ import ren.ashin.hq.examrobot.util.CookieUtil;
  * @date Mar 13, 2017
  */
 public class ExamRobot {
+    /**
+     * @Fields LOG : TODO
+     */
+    private static final Logger LOG = Logger.getLogger(ExamRobot.class);
+    public static Scheduler scheduler = null;
+    public static ApplicationContext ctx = null;
+
+    public static JobKey jobKey = null;
+
+    public static MainConfig mfg = null;
+
     public static void main(String[] args) {
-        CookieStore cks = null;
-        try {
-            cks = CookieUtil.getCookieStore("927875z210", "888888");
-        } catch (ClientProtocolException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
+        PropertyConfigurator.configure("conf/log4j-hq.properties");
+        ctx = new ClassPathXmlApplicationContext("applicationContext.xml");
+        mfg = ConfigFactory.create(MainConfig.class);
         
+        initCache();
         
-        RequestConfig config = RequestConfig.custom().build();
-        HttpPost httppost4 = new HttpPost("http://www.hq88.com/lms/member/index/index");
-        httppost4.setConfig(config);
-        CloseableHttpClient closeableHttpClient4 =
-                HttpClients.custom().setDefaultCookieStore(cks).build();
-        HttpResponse response4 = null;
         try {
-            response4 = closeableHttpClient4.execute(httppost4);
-        } catch (ClientProtocolException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            initScheduler();
+        } catch (SchedulerException e) {
+            LOG.error("初始化定时器出错", e);
         }
+    }
 
-        HttpEntity entity4 = response4.getEntity();
+    private static void initCache() {
+        QuestionCache.getInstance().reCache();;
+        
+    }
 
-        if (entity4 != null) {
-            try {
-                System.out.println(EntityUtils.toString(entity4));
-            } catch (ParseException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            } catch (IOException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
-        }
+    public static void initScheduler() throws SchedulerException {
+        // 调度任务工厂
+        SchedulerFactory schedulerFactory = new StdSchedulerFactory();
+        scheduler = schedulerFactory.getScheduler();
+
+        // 任务表扫描任务
+        JobDetail scanJobDetail = newJob(ScanTaskJob.class).withIdentity("任务表扫描", "group1").build();
+        jobKey = scanJobDetail.getKey();
+        CronTrigger scanTrigger =
+                newTrigger().withIdentity("trigger1", "group1")
+                        .withSchedule(cronSchedule(mfg.cronTask())).build();
+        scheduler.scheduleJob(scanJobDetail, scanTrigger);
+
+        scheduler.start();
+
+        // 启动任务消费进程（单线程）
+        TaskQueueConsumer mcs = new TaskQueueConsumer();
+        mcs.start();
     }
 }
