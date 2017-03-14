@@ -8,4 +8,7 @@ public interface MainConfig extends Mutable {
 
     @Key("cronTask")
     String cronTask();
+
+    @Key("cronUser")
+    String cronUser();
 }

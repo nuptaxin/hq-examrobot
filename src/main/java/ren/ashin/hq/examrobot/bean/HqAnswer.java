@@ -10,7 +10,7 @@ import java.util.Date;
  */
 public class HqAnswer {
     private Long id;
-    private Long questionId;
+    private Long courseId;
     private String name;
     private Long type;
     private String answerA;
@@ -31,12 +31,12 @@ public class HqAnswer {
         this.id = id;
     }
 
-    public Long getQuestionId() {
-        return questionId;
+    public Long getCourseId() {
+        return courseId;
     }
 
-    public void setQuestionId(Long questionId) {
-        this.questionId = questionId;
+    public void setCourseId(Long courseId) {
+        this.courseId = courseId;
     }
 
     public String getName() {

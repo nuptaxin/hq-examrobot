@@ -17,8 +17,9 @@ import org.quartz.impl.StdSchedulerFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
-import ren.ashin.hq.examrobot.cache.QuestionCache;
+import ren.ashin.hq.examrobot.cache.CourseCache;
 import ren.ashin.hq.examrobot.job.ScanTaskJob;
+import ren.ashin.hq.examrobot.job.ScanUserJob;
 import ren.ashin.hq.examrobot.service.TaskQueueConsumer;
 import ren.ashin.hq.examrobot.util.MainConfig;
 
@@ -55,7 +56,7 @@ public class ExamRobot {
     }
 
     private static void initCache() {
-        QuestionCache.getInstance().reCache();;
+        CourseCache.getInstance().reCache();;
         
     }
 
@@ -71,6 +72,13 @@ public class ExamRobot {
                 newTrigger().withIdentity("trigger1", "group1")
                         .withSchedule(cronSchedule(mfg.cronTask())).build();
         scheduler.scheduleJob(scanJobDetail, scanTrigger);
+        
+        // 用户表扫描任务
+        JobDetail scanUserDetail = newJob(ScanUserJob.class).withIdentity("用户表扫描", "group1").build();
+        CronTrigger scanUserTrigger =
+                newTrigger().withIdentity("trigger2", "group1")
+                .withSchedule(cronSchedule(mfg.cronUser())).build();
+        scheduler.scheduleJob(scanUserDetail, scanUserTrigger);
 
         scheduler.start();
 

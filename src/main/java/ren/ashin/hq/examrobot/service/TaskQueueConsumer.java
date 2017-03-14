@@ -3,15 +3,17 @@ package ren.ashin.hq.examrobot.service;
 import java.util.Date;
 import java.util.List;
 
+import org.apache.http.client.CookieStore;
 import org.apache.log4j.Logger;
 
 import ren.ashin.hq.examrobot.ExamRobot;
 import ren.ashin.hq.examrobot.bean.HqAnswer;
-import ren.ashin.hq.examrobot.bean.HqQuestion;
+import ren.ashin.hq.examrobot.bean.HqCourse;
 import ren.ashin.hq.examrobot.bean.HqTask;
 import ren.ashin.hq.examrobot.bean.HqUser;
 import ren.ashin.hq.examrobot.cache.AnswerCache;
-import ren.ashin.hq.examrobot.cache.QuestionCache;
+import ren.ashin.hq.examrobot.cache.CourseCache;
+import ren.ashin.hq.examrobot.cache.UserCookieCache;
 import ren.ashin.hq.examrobot.dao.HqTaskDao;
 import ren.ashin.hq.examrobot.dao.HqUserDao;
 
@@ -47,16 +49,23 @@ public class TaskQueueConsumer extends Thread {
         hqTaskDao.updateTaskStatus(task);
         LOG.debug("已经更改任务状态为执行中，任务id：" + task.getId());
         
-        // 获取用户信息
+        // 开始答题
+        answerTheQuestion(task);
+    }
+
+    private void answerTheQuestion(HqTask task) {
+     // 获取用户信息
         HqUser user = hqUserDao.findUserById(task.getUserId());
         // 查看用户的积分信息，分析用户是否有积分答题。（暂时不做）
         
-        List<HqQuestion> questionList = QuestionCache.getInstance().getQuestionList();
+        List<HqCourse> questionList = CourseCache.getInstance().getQuestionList();
         //查看当前题库中该题的答案存储情况。如果没有存储过该题目，应该如何应对
         
         // 缓存当前的所有关于选择问题的答案
-        List<HqAnswer> answerList = AnswerCache.getInstance().getAnswerByQId(task.getQuestionId());
+        List<HqAnswer> answerList = AnswerCache.getInstance().getAnswerByQId(task.getCourseId());
         
+        // 获取当前用户的登陆cookie
+        CookieStore userCookie = UserCookieCache.getInstance().getCookieByUser(user);
         
     }
 

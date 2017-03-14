@@ -4,7 +4,7 @@ import java.util.List;
 
 import org.apache.ibatis.annotations.Select;
 
-import ren.ashin.hq.examrobot.bean.HqQuestion;
+import ren.ashin.hq.examrobot.bean.HqCourse;
 
 /**
  * @ClassName: HqTaskDao
@@ -12,7 +12,7 @@ import ren.ashin.hq.examrobot.bean.HqQuestion;
  * @author renzx
  * @date Mar 13, 2017
  */
-public interface HqQuestionDao {
-    @Select("select * from hq_question")
-    List<HqQuestion> selectAllQuestion();
+public interface HqCourseDao {
+    @Select("select * from hq_course")
+    List<HqCourse> selectAllCourse();
 }

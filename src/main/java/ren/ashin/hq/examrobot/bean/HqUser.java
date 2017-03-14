@@ -10,13 +10,14 @@ import java.util.Date;
  */
 public class HqUser {
     private Long id;
-    private Long uId;
+    private String uId;
     private String name;
     private String password;
     private Date createTime;
     private Date updateTime;
     private Date lastLoginTime;
     private Long point;
+    private Long status;
 
     public Long getId() {
         return id;
@@ -26,11 +27,11 @@ public class HqUser {
         this.id = id;
     }
 
-    public Long getuId() {
+    public String getuId() {
         return uId;
     }
 
-    public void setuId(Long uId) {
+    public void setuId(String uId) {
         this.uId = uId;
     }
 
@@ -81,4 +82,13 @@ public class HqUser {
     public void setPoint(Long point) {
         this.point = point;
     }
+
+    public Long getStatus() {
+        return status;
+    }
+
+    public void setStatus(Long status) {
+        this.status = status;
+    }
+
 }

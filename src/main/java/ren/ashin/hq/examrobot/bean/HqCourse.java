@@ -8,9 +8,10 @@ import java.util.Date;
  * @author renzx
  * @date Mar 13, 2017
  */
-public class HqQuestion {
+public class HqCourse {
     private Long id;
     private String name;
+    private String uuId;
     private Long type;
     private Long sum;
     private Long radioSum;
@@ -33,6 +34,14 @@ public class HqQuestion {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public String getUuId() {
+        return uuId;
+    }
+
+    public void setUuId(String uuId) {
+        this.uuId = uuId;
     }
 
     public Long getType() {

@@ -8,10 +8,10 @@ import java.util.Date;
  * @author renzx
  * @date Mar 13, 2017
  */
-public class HqUqRelation {
+public class HqUcRelation {
     private Long id;
     private Long userId;
-    private Long questionId;
+    private Long courseId;
     private Long status;
     private Date createTime;
     private Date updateTime;
@@ -32,12 +32,12 @@ public class HqUqRelation {
         this.userId = userId;
     }
 
-    public Long getQuestionId() {
-        return questionId;
+    public Long getCourseId() {
+        return courseId;
     }
 
-    public void setQuestionId(Long questionId) {
-        this.questionId = questionId;
+    public void setCourseId(Long courseId) {
+        this.courseId = courseId;
     }
 
     public Long getStatus() {

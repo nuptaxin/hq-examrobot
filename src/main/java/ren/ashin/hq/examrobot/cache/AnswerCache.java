@@ -32,7 +32,7 @@ public class AnswerCache {
         }
         List<HqAnswer> hqAnswerList = hqAnswerDao.selectAnswerByQId(id);
         for (HqAnswer hqAnswer : hqAnswerList) {
-            answerMap.put(hqAnswer.getQuestionId(), hqAnswer);
+            answerMap.put(hqAnswer.getCourseId(), hqAnswer);
         }
         return hqAnswerList;
     }

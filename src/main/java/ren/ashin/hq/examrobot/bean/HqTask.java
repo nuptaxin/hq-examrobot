@@ -16,7 +16,7 @@ public class HqTask {
     
     private Long id;
     private Long userId;
-    private Long questionId;
+    private Long courseId;
     private Date createTime;
     private Date updateTime;
     private Long status;
@@ -38,12 +38,12 @@ public class HqTask {
         this.userId = userId;
     }
 
-    public Long getQuestionId() {
-        return questionId;
+    public Long getCourseId() {
+        return courseId;
     }
 
-    public void setQuestionId(Long questionId) {
-        this.questionId = questionId;
+    public void setCourseId(Long courseId) {
+        this.courseId = courseId;
     }
 
     public Date getCreateTime() {
