@@ -20,5 +20,7 @@ public interface HqUserDao {
     @Select("select * from hq_user t where t.status = #{status}")
     List<HqUser> findUserByStatus(Long status);
     @Update("update hq_user set status = #{status}, name = #{name} where id = #{id}")
+    void updateUserStatusAndName(HqUser user);
+    @Update("update hq_user set status = #{status} where id = #{id}")
     void updateUserStatus(HqUser user);
 }

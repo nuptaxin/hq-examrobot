@@ -56,16 +56,23 @@ public class TaskQueueConsumer extends Thread {
     private void answerTheQuestion(HqTask task) {
      // 获取用户信息
         HqUser user = hqUserDao.findUserById(task.getUserId());
-        // 查看用户的积分信息，分析用户是否有积分答题。（暂时不做）
+        // 查看用户的积分信息，分析用户是否有积分答题。
+        if(user.getPoint()<=0){
+            task.setStatus(HqTask.FAILED);
+            return;
+        }else{
+            user.setPoint(user.getPoint()-1);
+        }
         
         List<HqCourse> questionList = CourseCache.getInstance().getQuestionList();
         //查看当前题库中该题的答案存储情况。如果没有存储过该题目，应该如何应对
+        //暂时不做，默认关联关系没有问题
         
         // 缓存当前的所有关于选择问题的答案
         List<HqAnswer> answerList = AnswerCache.getInstance().getAnswerByQId(task.getCourseId());
         
         // 获取当前用户的登陆cookie
-        CookieStore userCookie = UserCookieCache.getInstance().getCookieByUser(user);
+        CookieStore userCookie = UserCookieCache.getInstance().updateCookieByUser(user);
         
     }
 

@@ -18,6 +18,7 @@ public class HqUser {
     private Date lastLoginTime;
     private Long point;
     private Long status;
+    private Long autoFlag;
 
     public Long getId() {
         return id;
@@ -89,6 +90,14 @@ public class HqUser {
 
     public void setStatus(Long status) {
         this.status = status;
+    }
+
+    public Long getAutoFlag() {
+        return autoFlag;
+    }
+
+    public void setAutoFlag(Long autoFlag) {
+        this.autoFlag = autoFlag;
     }
 
 }

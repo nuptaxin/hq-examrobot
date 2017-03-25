@@ -38,6 +38,7 @@ public class ExamRobot {
     public static ApplicationContext ctx = null;
 
     public static JobKey jobKey = null;
+    public static JobKey userKey = null;
 
     public static MainConfig mfg = null;
 
@@ -75,12 +76,17 @@ public class ExamRobot {
         
         // 用户表扫描任务
         JobDetail scanUserDetail = newJob(ScanUserJob.class).withIdentity("用户表扫描", "group1").build();
+        userKey = scanUserDetail.getKey();
         CronTrigger scanUserTrigger =
                 newTrigger().withIdentity("trigger2", "group1")
                 .withSchedule(cronSchedule(mfg.cronUser())).build();
         scheduler.scheduleJob(scanUserDetail, scanUserTrigger);
 
         scheduler.start();
+        
+        //程序启动后立即触发一次
+        scheduler.triggerJob(jobKey);
+        scheduler.triggerJob(userKey);
 
         // 启动任务消费进程（单线程）
         TaskQueueConsumer mcs = new TaskQueueConsumer();
