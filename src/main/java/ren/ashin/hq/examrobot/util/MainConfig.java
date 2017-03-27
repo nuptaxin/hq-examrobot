@@ -11,4 +11,7 @@ public interface MainConfig extends Mutable {
 
     @Key("cronUser")
     String cronUser();
+    
+    @Key("cronAuto")
+    String cronAuto();
 }

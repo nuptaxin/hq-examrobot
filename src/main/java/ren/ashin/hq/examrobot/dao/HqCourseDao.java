@@ -16,6 +16,12 @@ import ren.ashin.hq.examrobot.bean.HqCourse;
 public interface HqCourseDao {
     @Select("select * from hq_course")
     List<HqCourse> selectAllCourse();
+    
+    @Select("select * from hq_course where id=#{id}")
+    HqCourse selectCourseById(Long id);
+    
+    @Select("select id from hq_course where name=#{name}")
+    Long selectCourseIdByName(String name);
 
     @Insert("insert hq_course(name,type,createtime,updatetime,uuid) values(#{name},#{type},#{createTime},#{updateTime},#{uuId})")
     void listInsert(HqCourse hqCourse);

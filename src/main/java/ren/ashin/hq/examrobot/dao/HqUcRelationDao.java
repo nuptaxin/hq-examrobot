@@ -18,8 +18,8 @@ public interface HqUcRelationDao {
     @Select("select * from hq_ucrelation")
     List<HqUcRelation> selectAllRelation();
     
-    @Select("select * from hq_ucrelation")
-    List<HqUcRelation> selectRelationByUserId();
+    @Select("select * from hq_ucrelation where userid = #{userId}")
+    List<HqUcRelation> selectRelationByUserId(Long userId);
     
     @Delete("delete from hq_ucrelation where userid = #{userId}")
     void deleteRelationByUserId(Long userId);

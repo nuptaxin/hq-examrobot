@@ -10,7 +10,7 @@ Target Server Type    : MYSQL
 Target Server Version : 50173
 File Encoding         : 65001
 
-Date: 2017-03-25 10:21:46
+Date: 2017-03-27 22:40:02
 */
 
 SET FOREIGN_KEY_CHECKS=0;
@@ -33,6 +33,7 @@ CREATE TABLE `hq_answer` (
   `answerletter` varchar(255) DEFAULT NULL,
   `createtime` datetime NOT NULL,
   `time` int(11) NOT NULL DEFAULT '0' COMMENT '出现次数',
+  `subjectid` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
@@ -51,6 +52,17 @@ CREATE TABLE `hq_course` (
   `createtime` datetime NOT NULL,
   `updatetime` datetime NOT NULL,
   `uuid` varchar(255) NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+-- ----------------------------
+-- Table structure for hq_parse
+-- ----------------------------
+DROP TABLE IF EXISTS `hq_parse`;
+CREATE TABLE `hq_parse` (
+  `id` int(11) NOT NULL,
+  `courseid` int(11) NOT NULL,
+  `parsetime` datetime NOT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 

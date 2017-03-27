@@ -19,6 +19,8 @@ public interface HqUserDao {
     HqUser findUserById(Long id);
     @Select("select * from hq_user t where t.status = #{status}")
     List<HqUser> findUserByStatus(Long status);
+    @Select("select * from hq_user t where t.autoflag = #{autoFlag} and t.status = 2")
+    List<HqUser> findUserByAutoFlag(Long autoFlag);
     @Update("update hq_user set status = #{status}, name = #{name} where id = #{id}")
     void updateUserStatusAndName(HqUser user);
     @Update("update hq_user set status = #{status} where id = #{id}")

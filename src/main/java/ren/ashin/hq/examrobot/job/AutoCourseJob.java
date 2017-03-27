@@ -1,4 +1,4 @@
-package ren.ashin.hq.examrobot.service;
+package ren.ashin.hq.examrobot.job;
 
 import java.io.File;
 import java.io.IOException;
@@ -7,8 +7,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
@@ -31,86 +29,58 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.quartz.Job;
+import org.quartz.JobExecutionContext;
+import org.quartz.JobExecutionException;
+
+import ren.ashin.hq.examrobot.ExamRobot;
+import ren.ashin.hq.examrobot.bean.HqCourse;
+import ren.ashin.hq.examrobot.bean.HqUcRelation;
+import ren.ashin.hq.examrobot.bean.HqUser;
+import ren.ashin.hq.examrobot.cache.UserCookieCache;
+import ren.ashin.hq.examrobot.dao.HqCourseDao;
+import ren.ashin.hq.examrobot.dao.HqUcRelationDao;
+import ren.ashin.hq.examrobot.dao.HqUserDao;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
-
-import ren.ashin.hq.examrobot.ExamRobot;
-import ren.ashin.hq.examrobot.bean.HqAnswer;
-import ren.ashin.hq.examrobot.bean.HqCourse;
-import ren.ashin.hq.examrobot.bean.HqTask;
-import ren.ashin.hq.examrobot.bean.HqUser;
-import ren.ashin.hq.examrobot.cache.AnswerCache;
-import ren.ashin.hq.examrobot.cache.CourseCache;
-import ren.ashin.hq.examrobot.cache.UserCookieCache;
-import ren.ashin.hq.examrobot.dao.HqAnswerDao;
-import ren.ashin.hq.examrobot.dao.HqCourseDao;
-import ren.ashin.hq.examrobot.dao.HqTaskDao;
-import ren.ashin.hq.examrobot.dao.HqUserDao;
 
 /**
- * @ClassName: TaskQueueConsumer
- * @Description: TODO
+ * @ClassName: AutoCourseJob
+ * @Description: 自动任务
  * @author renzx
- * @date Mar 13, 2017
+ * @date Nov 11, 2016
  */
-public class TaskQueueConsumer extends Thread {
-    private TaskQueueService taskQueueService = ExamRobot.ctx.getBean(TaskQueueService.class);
-    private HqTaskDao hqTaskDao = ExamRobot.ctx.getBean(HqTaskDao.class);
+public class AutoCourseJob implements Job {
+    private static final Logger LOG = Logger.getLogger(AutoCourseJob.class);
     private HqUserDao hqUserDao = ExamRobot.ctx.getBean(HqUserDao.class);
+    private HqUcRelationDao hqUcRelationDao = ExamRobot.ctx.getBean(HqUcRelationDao.class);
     private HqCourseDao hqCourseDao = ExamRobot.ctx.getBean(HqCourseDao.class);
-    private HqAnswerDao hqAnswerDao = ExamRobot.ctx.getBean(HqAnswerDao.class);
-    private static final Logger LOG = Logger.getLogger(TaskQueueConsumer.class);
 
     @Override
-    public void run() {
-        while (true) {
-            HqTask task = null;
-            try {
-                task = taskQueueService.getQueue().take();
-                comsumerTask(task);
-                taskQueueService.setTaskSize(taskQueueService.getQueue().size());
-            } catch (InterruptedException e) {
+    public void execute(JobExecutionContext context) throws JobExecutionException {
+        Date fireTime = context.getFireTime();
+        exeTask(fireTime);
+    }
 
+    private void exeTask(Date fireTime) {
+        // 获取所有的可以自动答题的用户(且status为2)
+        List<HqUser> autoUserList = hqUserDao.findUserByAutoFlag(1L);
+        // 由于每天可以考两次，所以直接把用户加两遍
+        autoUserList.addAll(autoUserList);
+        for (HqUser hqUser : autoUserList) {
+            CookieStore userCookie = UserCookieCache.getInstance().updateCookieByUser(hqUser);
+            // 获取当前用户关联的题目
+            List<HqUcRelation> relationList =
+                    hqUcRelationDao.selectRelationByUserId(hqUser.getId());
+            for (HqUcRelation hqUcRelation : relationList) {
+                // 获取当前题目的详细信息
+                HqCourse currCourse = hqCourseDao.selectCourseById(hqUcRelation.getCourseId());
+                // 开始答题
+                beginExam(hqUser,userCookie,currCourse);
             }
-        }
-    }
 
-    private void comsumerTask(HqTask task) {
-        task.setStatus(HqTask.RUNNING);
-        task.setUpdateTime(new Date());
-        hqTaskDao.updateTaskStatus(task);
-        LOG.debug("已经更改任务状态为执行中，任务id：" + task.getId());
-        
-        // 开始答题
-        answerTheQuestion(task);
-    }
-
-    private void answerTheQuestion(HqTask task) {
-     // 获取用户信息
-        HqUser user = hqUserDao.findUserById(task.getUserId());
-        HqCourse hqCourse = hqCourseDao.selectCourseById(task.getCourseId());
-        // 查看用户的积分信息，分析用户是否有积分答题。
-        if(user.getPoint()<=0){
-            task.setStatus(HqTask.FAILED);
-            return;
-        }else{
-            user.setPoint(user.getPoint()-1);
         }
-        
-        List<HqCourse> questionList = CourseCache.getInstance().getQuestionList();
-        //查看当前题库中该题的答案存储情况。如果没有存储过该题目，应该如何应对
-        //暂时不做，默认关联关系没有问题
-        
-        // 缓存当前的所有关于选择问题的答案
-        List<HqAnswer> answerList = AnswerCache.getInstance().getAnswerByQId(task.getCourseId());
-        
-        // 获取当前用户的登陆cookie
-        CookieStore userCookie = UserCookieCache.getInstance().updateCookieByUser(user);
-        
-        beginExam(user,userCookie,hqCourse);
-        
     }
 
     private void beginExam(HqUser hqUser, CookieStore userCookie, HqCourse currCourse) {
@@ -274,7 +244,7 @@ public class TaskQueueConsumer extends Thread {
             try {
                 htmlStr = EntityUtils.toString(entity);
                 // 需要从此页面获取答案页面
-                if (submitAnswer(htmlStr, userCookie,currCourse) != null) {
+                if (submitAnswer(htmlStr, userCookie) != null) {
                     return null;
                 };
 
@@ -299,7 +269,7 @@ public class TaskQueueConsumer extends Thread {
 
     }
 
-    private Long submitAnswer(String htmlStr, CookieStore userCookie, HqCourse currCourse) {
+    private Long submitAnswer(String htmlStr, CookieStore userCookie) {
         Document d1 = Jsoup.parse(htmlStr);// 转换为Dom树
         Element formEle = d1.getElementById("examForm");
         if (formEle == null) {
@@ -311,14 +281,6 @@ public class TaskQueueConsumer extends Thread {
             inputMap.put(element.attr("name"), element.attr("value"));
         }
 
-        //从数据库中取出当前题目的所有答案
-        List<HqAnswer> answerList = hqAnswerDao.selectAnswerByQId(currCourse.getId());
-        //组一个按题目名的Map
-        Map<String,HqAnswer> answerMap = Maps.newHashMap();
-        for (HqAnswer hqAnswer : answerList) {
-            answerMap.put(hqAnswer.getName(), hqAnswer);
-        }
-        
         // 获取每个题目的唯一Id
         StringBuilder answersbd = new StringBuilder();
         List<Element> eleList = Lists.newArrayList();
@@ -338,61 +300,16 @@ public class TaskQueueConsumer extends Thread {
             // 获取题目的id
             Element course =
                     element.getElementsByAttributeValue("class", "exam-correction").first();
-            String subjectid1 = course.attr("onclick");
-            String subjectid = StringUtils.substringBetween(subjectid1, "','", "')");
-            String subjectName = StringUtils.substringBetween(subjectid1, ",'", "','");
-            
-            
-            //获取当前题目的所有的答案
-            Elements allchoise =element.getElementsByTag("p");
-            //将答案按照答案name，答案项组成Map
-            Map<String,String> anMap = Maps.newHashMap();
-            for (Element element2 : allchoise) {
-                String txt1 = element2.text();
-                anMap.put(StringUtils.substringAfter(txt1, "、"), StringUtils.substringBefore(txt1, "、"));
-            }
-            HqAnswer hqAnswer = answerMap.get(subjectName);
-            //组一个当前题目要选的set
-            
-            Set<String> choiceSet = Sets.newHashSet();
-            if(hqAnswer.getAnswerLetter().contains("A")){
-                choiceSet.add(hqAnswer.getAnswerA());
-            }
-            if(hqAnswer.getAnswerLetter().contains("B")){
-                choiceSet.add(hqAnswer.getAnswerB());
-            }
-            if(hqAnswer.getAnswerLetter().contains("C")){
-                choiceSet.add(hqAnswer.getAnswerC());
-            }
-            if(hqAnswer.getAnswerLetter().contains("D")){
-                choiceSet.add(hqAnswer.getAnswerD());
-            }
-            if(hqAnswer.getAnswerLetter().contains("E")){
-                choiceSet.add(hqAnswer.getAnswerE());
-            }
-            if(hqAnswer.getAnswerLetter().contains("F")){
-                choiceSet.add(hqAnswer.getAnswerF());
-            }
-            
-            StringBuilder aaaa = new StringBuilder();
-            for (Entry<String, String> entry : anMap.entrySet()) {
-                if(choiceSet.contains(entry.getKey())){
-                    aaaa.append(entry.getValue());
-                }
-            }
-            
-            
+            String subjectid = course.attr("onclick");
+            subjectid = StringUtils.substringBetween(subjectid, "','", "')");
+
             // 拼接字符串
             answersbd.append(subjectid);
             answersbd.append(",");
             if (subjectType.contains("选择题")) {
-                answersbd.append(aaaa.toString());
+                answersbd.append("A");
             } else {
-                if("A".equals(aaaa.toString())){
-                    answersbd.append("1");
-                }else{
-                    answersbd.append("2");
-                }
+                answersbd.append("1");
             }
             answersbd.append(";");
         }
@@ -437,4 +354,5 @@ public class TaskQueueConsumer extends Thread {
         }
         return null;
     }
+
 }

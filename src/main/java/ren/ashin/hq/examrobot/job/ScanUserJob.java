@@ -134,7 +134,7 @@ public class ScanUserJob implements Job {
                             String name = element.getElementsByTag("h4").text();
                             String link =
                                     element.getElementsByTag("a").val("学习").last().attr("href");
-                            String uuid = StringUtils.substringBetween(link, "(0,'", "')");
+                            String uuid = StringUtils.substringBetween(link, "(0,'", "','");
                             if (uuid == null) {
                                 uuid = StringUtils.substringBetween(link, "('", "');");
                             }

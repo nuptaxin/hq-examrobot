@@ -22,6 +22,7 @@ public class HqAnswer {
     private String answerLetter;
     private Date createTime;
     private Long time;
+    private String subjectId;
 
     public Long getId() {
         return id;
@@ -127,5 +128,11 @@ public class HqAnswer {
         this.time = time;
     }
 
+    public String getSubjectId() {
+        return subjectId;
+    }
 
+    public void setSubjectId(String subjectId) {
+        this.subjectId = subjectId;
+    }
 }

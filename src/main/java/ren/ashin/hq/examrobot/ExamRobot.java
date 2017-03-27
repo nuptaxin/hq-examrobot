@@ -18,8 +18,10 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 import ren.ashin.hq.examrobot.cache.CourseCache;
+import ren.ashin.hq.examrobot.job.AutoCourseJob;
 import ren.ashin.hq.examrobot.job.ScanTaskJob;
 import ren.ashin.hq.examrobot.job.ScanUserJob;
+import ren.ashin.hq.examrobot.parser.FileMonitorThread;
 import ren.ashin.hq.examrobot.service.TaskQueueConsumer;
 import ren.ashin.hq.examrobot.util.MainConfig;
 
@@ -39,6 +41,7 @@ public class ExamRobot {
 
     public static JobKey jobKey = null;
     public static JobKey userKey = null;
+    public static JobKey autoKey = null;
 
     public static MainConfig mfg = null;
 
@@ -81,12 +84,24 @@ public class ExamRobot {
                 newTrigger().withIdentity("trigger2", "group1")
                 .withSchedule(cronSchedule(mfg.cronUser())).build();
         scheduler.scheduleJob(scanUserDetail, scanUserTrigger);
-
+        
+        // 自动答题任务
+        JobDetail autoCourseDetail = newJob(AutoCourseJob.class).withIdentity("自动答题任务", "group1").build();
+        autoKey = autoCourseDetail.getKey();
+        CronTrigger autoCourseTrigger =
+                newTrigger().withIdentity("trigger3", "group1")
+                .withSchedule(cronSchedule(mfg.cronAuto())).build();
+        scheduler.scheduleJob(autoCourseDetail, autoCourseTrigger);
+        
         scheduler.start();
         
         //程序启动后立即触发一次
-        scheduler.triggerJob(jobKey);
-        scheduler.triggerJob(userKey);
+//        scheduler.triggerJob(jobKey);
+//        scheduler.triggerJob(userKey);
+//        scheduler.triggerJob(autoKey);
+        
+        Thread t = new FileMonitorThread();
+        t.start();
 
         // 启动任务消费进程（单线程）
         TaskQueueConsumer mcs = new TaskQueueConsumer();
